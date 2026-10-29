@@ -1,0 +1,90 @@
+{
+  "_lisezmoi": "LE PROFIL : ce qui appartient à celui qui monte, pas au moteur. Remplacez ce fichier (ou posez MONTAGE_PROFIL=<chemin>) et la stack porte VOTRE identité sans qu'une ligne de code change. Celui-ci est neutre : à vous de l'arbitrer.",
+  "operateur": "le monteur",
+  "langue": "fr",
+  "identite": {
+    "accent": "#F5F5F5",
+    "_accent": "La couleur d'accent des cartons, vignettes et sous-titres, déclarée UNE fois. Le moteur en dérive les formats CSS, ffmpeg (0xRRGGBB) et ASS (&HAABBGGRR — inversé, piège classique).",
+    "police_titre": "Bebas Neue",
+    "police_titre_fichier": "BebasNeue-Regular.ttf",
+    "police_texte": "Montserrat",
+    "police_sous_titre": "Lato Black",
+    "police_cjk": "PingFang SC",
+    "_polices": "Polices libres (SIL OFL) embarquées dans facecam/assets/fonts. Changez-les ici, pas dans le code."
+  },
+  "montage": {
+    "look_defaut": "LOOK STUDIO",
+    "qualite_defaut": "brouillon",
+    "definition_defaut": "1080",
+    "_definition": "On travaille en 1080 et on ne passe en 2160 que pour le master : les overlays sont calés sur le repère 1920x1080."
+  },
+  "son": {
+    "beat_par_defaut": false,
+    "duree_piste_cible_s": 150,
+    "voix_prioritaire_sur_plan_commente": true,
+    "_son": "Préférences sonores par défaut : à ajuster à votre goût."
+  },
+  "episode": {
+    "duree_cible_min": 13,
+    "alternance": "L·F",
+    "ouverture": "paysage",
+    "cloture": "facecam",
+    "ancres_par_jour_min": 1,
+    "_episode": "La trame d'un épisode (ouverture, clôture, alternance paysage / parlé). Une valeur de départ : changez-la."
+  },
+  "retention": {
+    "garder": 2,
+    "_retention": "N et N-1. Tout part à la corbeille, jamais de suppression sèche."
+  },
+  "serrement": {
+    "_lisezmoi": "Le SERREMENT du parlé, en paliers nommés : combien de marge garder autour d'un mot et quel silence couper. Choisissez un palier par montage.",
+    "defaut": "serre",
+    "paliers": {
+      "historique": {
+        "lead": 0.05,
+        "tail": 0.18,
+        "silThresh": 0.5,
+        "silTarget": 0.24,
+        "voice": "-24dB",
+        "gap": 0.14,
+        "eprouve": false
+      },
+      "doux": {
+        "lead": 0.08,
+        "tail": 0.25,
+        "silThresh": 0.7,
+        "silTarget": 0.4,
+        "voice": "-27dB",
+        "gap": 0.2,
+        "eprouve": false
+      },
+      "normal": {
+        "lead": 0.05,
+        "tail": 0.1,
+        "silThresh": 0.5,
+        "silTarget": 0.24,
+        "voice": "-24dB",
+        "gap": 0.14,
+        "eprouve": true
+      },
+      "serre": {
+        "lead": 0.02,
+        "tail": 0.06,
+        "silThresh": 0.35,
+        "silTarget": 0.16,
+        "voice": "-24dB",
+        "gap": 0.14,
+        "eprouve": true
+      },
+      "tres-serre": {
+        "lead": 0.01,
+        "tail": 0.04,
+        "silThresh": 0.25,
+        "silTarget": 0.1,
+        "voice": "-22dB",
+        "gap": 0.1,
+        "eprouve": false
+      }
+    }
+  }
+}

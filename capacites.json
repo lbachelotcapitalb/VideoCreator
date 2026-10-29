@@ -1,0 +1,1447 @@
+{
+  "_lisezmoi": "SOURCE UNIQUE des competences de la stack. Lue par: (1) la Bande de montage (panneau Competences), (2) capacites.mjs --skill qui REGENERE la table de routage du SKILL.md, (3) generise.mjs qui n'exporte vers le depot public que ce qui porte public:true. Ne jamais tenir a la main une deuxieme liste ailleurs. Toute edition -> node capacites.mjs --check.",
+  "version": "0.1.0",
+  "chaines": {
+    "A": {
+      "titre": "Parole",
+      "sous_titre": "dérusher des rushs parlés, couper les vides",
+      "public": true
+    },
+    "B": {
+      "titre": "Voir",
+      "sous_titre": "bande de montage, pellicules, mesures",
+      "public": true
+    },
+    "C": {
+      "titre": "Habillage",
+      "sous_titre": "sous-titres, overlays, miniature",
+      "public": true
+    },
+    "D": {
+      "titre": "Paysage",
+      "sous_titre": "catalogue, montage d'une journée, vlog, musique",
+      "public": true
+    },
+    "E": {
+      "titre": "Chaîne",
+      "sous_titre": "état, rangement, preuve, restitution",
+      "public": true
+    }
+  },
+  "capacites": [
+    {
+      "id": "facecam-derushage",
+      "chaine": "A",
+      "vedette": true,
+      "titre": "Dérusher des rushs parlés en un montage serré",
+      "resume": "La chaîne complète : cartographier ce qui est dit, élire la meilleure prise de chaque sujet, couper les vides, les faux départs et les euh, équilibrer la lumière, rendre. Un garde refuse le master s'il reste une scorie.",
+      "declencheurs": [
+        "dérushe mes facecam",
+        "merge mes prises parlées",
+        "coupe les vides",
+        "fais un vlog parlé",
+        "monte ma facecam"
+      ],
+      "cmd": "node facecam/map.mjs \"<dossierRushs>\"",
+      "scripts": [
+        "facecam/map.mjs",
+        "facecam/subjects.mjs",
+        "facecam/pick.mjs",
+        "facecam/refine.mjs",
+        "facecam/relances.mjs",
+        "facecam/joins.mjs",
+        "facecam/coherence.mjs",
+        "facecam/lumieres.mjs",
+        "facecam/render.mjs",
+        "facecam/parole.mjs",
+        "facecam/overlays/vad.py",
+        "facecam/overlays/vad-cas.mjs"
+      ],
+      "entree": "un dossier de rushs .mp4 parlés",
+      "sortie": "un master .mp4 serré + son EDL .json",
+      "bin": [
+        "aubiopitch",
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [
+        "numpy"
+      ],
+      "doc": "facecam/README.md",
+      "gate": "facecam/parole.mjs — refuse de livrer si le master porte une relance, un euh long, une queue perdue, une borne `b` posée dans un mot, une borne `a` qui AMPUTE le début de la phrase (19/09), ou un BLANC DE TÊTE > 0,30 s. La relance et les bursts se mesurent sur la SOURCE et dans la BANDE VOCALE : sur le rendu, les silences comprimés soudent deux prises et whisper les déduplique. Le blanc de tête est le plus long SILENCE AVÉRÉ devant la voix, jamais un onset (cas connus rejouables : facecam/overlays/vad-cas.mjs). `render.mjs` refuse EN PLUS, avant tout encodage, un MICRO-SEGMENT — un keep de moins de 8 images dans le plan de coupe — et refuse de contrôler avec une carte qui ne connaît pas les clips de l EDL (la dimension QUEUE serait non mesurée en silence). Il laisse un QUITUS `<master>.parole.json` portant l empreinte du master : sans lui, vlog.mjs refuse de livrer.",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-carte",
+      "chaine": "A",
+      "titre": "Cartographier ce qui est dit dans un dossier de rushs",
+      "resume": "Découpe sur la vérité des silences puis transcrit chaque îlot séparément : une carte contenu-timecode fiable pour écrire l'EDL.",
+      "declencheurs": [
+        "qu'est-ce que je dis dans ces rushs",
+        "carte de mes prises",
+        "transcris mes rushs"
+      ],
+      "cmd": "node facecam/map.mjs \"<dossierRushs>\" [--gap 1.2] [--min 0.7]",
+      "scripts": [
+        "facecam/map.mjs"
+      ],
+      "entree": "un dossier de rushs .mp4",
+      "sortie": "carte .json : un îlot de parole = un texte + un timecode",
+      "bin": [
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-sujets",
+      "chaine": "A",
+      "titre": "Lister les sujets traités et leurs reprises",
+      "resume": "Met à plat les îlots de tous les rushs, les compare, et dresse la liste des sujets — un sujet pouvant avoir été refait plusieurs fois, y compris sur plusieurs rushs.",
+      "declencheurs": [
+        "quels sujets j'ai traités",
+        "j'ai refait des prises",
+        "regroupe mes reprises"
+      ],
+      "cmd": "node facecam/subjects.mjs",
+      "scripts": [
+        "facecam/subjects.mjs"
+      ],
+      "entree": "la carte produite par facecam-carte",
+      "sortie": "carte des sujets : chaque sujet, toutes ses occurrences, une meilleure provisoire",
+      "bin": [],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-meilleure-prise",
+      "chaine": "A",
+      "titre": "Élire la meilleure prise de chaque sujet",
+      "resume": "Note chaque occurrence par un score pondéré : stabilité de tête, yeux ouverts, regard caméra, densité de parole. Remplace le choix provisoire par une étoile motivée.",
+      "declencheurs": [
+        "quelle prise garder",
+        "la meilleure version de ce sujet",
+        "choisis mes prises"
+      ],
+      "cmd": "node facecam/pick.mjs",
+      "scripts": [
+        "facecam/pick.mjs",
+        "facecam/score_video.py"
+      ],
+      "entree": "la carte des sujets",
+      "sortie": "une étoile motivée par sujet + le détail des scores",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [
+        "mediapipe"
+      ],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-affiner",
+      "chaine": "A",
+      "titre": "Affiner les bornes sur le vrai parlé",
+      "resume": "Segmente en bursts de voix à un seuil où la respiration ne passe pas, transcrit chaque burst pour le classer, puis coupe les bursts de tête et de fin non substantiels et retire les fillers isolés.",
+      "declencheurs": [
+        "serre mes bornes",
+        "il reste du blanc au début",
+        "affine les coupes"
+      ],
+      "cmd": "node facecam/refine.mjs <edl.json>",
+      "scripts": [
+        "facecam/refine.mjs"
+      ],
+      "entree": "un EDL",
+      "sortie": "le même EDL, bornes affinées sur la parole",
+      "bin": [
+        "aubiopitch",
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-relances",
+      "chaine": "A",
+      "titre": "Couper les faux départs et les relances",
+      "resume": "Quand l'ouverture d'un span se répète, la bonne prise est la dernière : les précédentes sont des départs avortés. Affiner ne le voit pas — cette passe est obligatoire.",
+      "declencheurs": [
+        "j'ai bafouillé",
+        "je me suis repris",
+        "coupe mes faux départs",
+        "il reste des ratés"
+      ],
+      "cmd": "node facecam/relances.mjs --apply",
+      "scripts": [
+        "facecam/relances.mjs"
+      ],
+      "entree": "un EDL affine",
+      "sortie": "le même EDL, relances retirées",
+      "bin": [
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-balayage",
+      "chaine": "A",
+      "titre": "Balayer une borne récalcitrante",
+      "resume": "Un instrument, pas un verdict : balaie UNE borne d'un span, instruit, et disqualifie ce qui tombe dans la parole. Il n'élit rien sans qu'on le lui demande.",
+      "declencheurs": [
+        "il reste une scorie",
+        "un mot est mangé en queue",
+        "cette coupe tombe mal"
+      ],
+      "cmd": "node facecam/sweep.mjs --span <id> [--borne b] [--sens dehors]",
+      "scripts": [
+        "facecam/sweep.mjs"
+      ],
+      "entree": "un EDL + l'identifiant du span",
+      "sortie": "un tableau de candidats mesures pour cette borne",
+      "bin": [
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-controles",
+      "chaine": "A",
+      "titre": "Contrôler la forme et le sens avant de rendre",
+      "resume": "joins mesure la forme (micro-segments, saut de pose au raccord) ; coherence mesure le sens (phrases inventées par whisper sur du silence, référents manquants). Les deux alertent, aucun ne coupe.",
+      "declencheurs": [
+        "c'est prêt à rendre",
+        "contrôle mon EDL",
+        "vérifie avant rendu"
+      ],
+      "cmd": "node facecam/joins.mjs <edl.json> && node facecam/coherence.mjs <edl.json>",
+      "scripts": [
+        "facecam/joins.mjs",
+        "facecam/coherence.mjs",
+        "facecam/pose_at.py"
+      ],
+      "entree": "un EDL",
+      "sortie": "deux rapports d'alertes a arbitrer",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [
+        "mediapipe"
+      ],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-lumieres",
+      "chaine": "A",
+      "titre": "Équilibrer la lumière entre les prises",
+      "resume": "Des plans sombres et d'autres très lumineux, au hasard de la mise au point : cette passe mesure et rapproche. Lancée automatiquement par le rendu sur tout span sans réglage de lumière.",
+      "declencheurs": [
+        "mes plans n'ont pas la même lumière",
+        "ça saute en luminosité",
+        "équilibre l'image"
+      ],
+      "cmd": "node facecam/lumieres.mjs --apply",
+      "scripts": [
+        "facecam/lumieres.mjs"
+      ],
+      "entree": "un EDL",
+      "sortie": "un réglage de lumière par span, mesure",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-rendu",
+      "chaine": "A",
+      "titre": "Rendre l'EDL en un master serré",
+      "resume": "Chaque span démarre pile à l'onset de parole, les silences internes longs sont ramenés à une cible, puis concat et normalisation sonore en une fois. Les coupes tombent dans le silence, donc aucun mot n'est tronqué.",
+      "declencheurs": [
+        "rends le montage",
+        "fabrique le master",
+        "sors la vidéo"
+      ],
+      "cmd": "node facecam/render.mjs <edl.json> [--def 1080|2160] [--out <fichier.mp4>]",
+      "scripts": [
+        "facecam/render.mjs",
+        "facecam/lib.mjs"
+      ],
+      "entree": "un EDL contrôle",
+      "sortie": "un master .mp4 + son .spans.json",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "gate": "facecam/parole.mjs, lance par le rendu lui-même",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "serrement",
+      "chaine": "A",
+      "titre": "Choisir à quel point le parlé est serré",
+      "resume": "Quatre paliers nommés — doux, normal, serré, très serré — qui posent d'un coup la respiration gardée, la queue, le seuil et la cible de compression des silences, et les seuils d'affinage. Deux existaient déjà dans les faits, recopiés à la main d'un EDL à l'autre : leurs valeurs sont reprises telles quelles. Une clé posée dans l'EDL gagne toujours sur le palier.",
+      "declencheurs": [
+        "c'est trop serré",
+        "ça respire pas assez",
+        "serre plus",
+        "laisse respirer",
+        "quels niveaux de serrement",
+        "coupe plus court"
+      ],
+      "cmd": "node facecam/render.mjs <edl.json> --serrement serre",
+      "scripts": [
+        "facecam/render.mjs",
+        "facecam/refine.mjs",
+        "profil.mjs"
+      ],
+      "entree": "un EDL + un nom de palier",
+      "sortie": "le rendu, et la ligne de preuve qui dit quel palier a servi",
+      "bin": [
+        "aubiopitch",
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "gate": "facecam/parole.mjs — un palier jamais éprouvé se signale, et c'est le garde de la parole qui refuse le master si une queue est mangée",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-garde-parole",
+      "chaine": "A",
+      "titre": "Le garde de la parole",
+      "resume": "Contrôle un master rendu, span par span, sur trois défauts : une relance laissée, un euh tenu, une queue tronquée. Il refuse de livrer — une exception se déclaré explicitement dans l'EDL.",
+      "declencheurs": [
+        "est-ce qu'il reste des scories",
+        "prouve que le master est propre"
+      ],
+      "cmd": "node facecam/parole.mjs <master.mp4>",
+      "scripts": [
+        "facecam/parole.mjs",
+        "facecam/parole.py"
+      ],
+      "entree": "un master rendu + son EDL",
+      "sortie": "un verdict par span ; sortie non nulle si un défaut subsiste",
+      "bin": [
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [
+        "numpy"
+      ],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-distiller",
+      "chaine": "A",
+      "titre": "Repérer la même idée redite autrement",
+      "resume": "Deux prises peuvent dire la même chose avec d'autres mots — ce que la comparaison lexicale raté par construction. Embeddings locaux, sans réseau, pour trouver les redites et les pépites isolables.",
+      "declencheurs": [
+        "je me répète",
+        "j'ai dit ça deux fois",
+        "distille mon propos"
+      ],
+      "cmd": "node facecam/distill.mjs",
+      "scripts": [
+        "facecam/distill.mjs",
+        "facecam/embed.py"
+      ],
+      "entree": "la carte des sujets",
+      "sortie": "groupes d'idées redondantes + apports isolables",
+      "bin": [],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "beta",
+      "public": true
+    },
+    {
+      "id": "facecam-fusion",
+      "chaine": "A",
+      "titre": "Souder plusieurs rendus en un seuil master",
+      "resume": "Un lot rendu morceau par morceau ne rentre pas tel quel dans un épisode. Cet outil soude les mp4 et re-adresse la table des sujets sur l'horloge du master soude.",
+      "declencheurs": [
+        "colle mes rendus",
+        "un seul fichier à partir de mes morceaux"
+      ],
+      "cmd": "node facecam/fusion.mjs <rendu1.mp4> <rendu2.mp4> ...",
+      "scripts": [
+        "facecam/fusion.mjs"
+      ],
+      "entree": "N rendus + leurs .spans.json",
+      "sortie": "un master soude + un sujets.json global",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-table-sujets",
+      "chaine": "A",
+      "titre": "Ré-adresser la table des sujets d'un master rendu d'un seul tenant",
+      "resume": "fusion.mjs écrit la table des sujets quand le master est soudé de plusieurs morceaux. Quand il sort d'UN seul rendu, personne ne l'écrivait : ce geste se faisait à la main, et il fallait le réinventer dès qu'une borne de l'EDL bougeait. Ici la table est dérivée du manifeste de spans, la ville est reprise par LABEL depuis la table précédente, et l'outil refuse si les bornes ne pavent pas le master.",
+      "declencheurs": [
+        "ré-adresse mes sujets",
+        "les bornes de l'EDL ont bougé",
+        "refais la table des sujets"
+      ],
+      "cmd": "node facecam/sujets.mjs <master.spans.json> --villes <ancien-sujets.json> --out <sujets.json>",
+      "scripts": [
+        "facecam/sujets.mjs"
+      ],
+      "entree": "le .spans.json du master + le sujets.json précédent (pour les villes)",
+      "sortie": "une table de sujets contiguë, contrôlée à 0 ms",
+      "bin": [],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "facecam-anti-regression",
+      "chaine": "A",
+      "titre": "Figer une référence pour qu'un réglage ne casse rien en silence",
+      "resume": "Un pipeline qui s'améliore gagne sur un axe et casse ailleurs sans le dire. Cette base fige un état de référence et compare à chaque itération.",
+      "declencheurs": [
+        "est-ce que j'ai cassé quelque chose",
+        "compare avec avant",
+        "anti-régression"
+      ],
+      "cmd": "node facecam/baseline.mjs",
+      "scripts": [
+        "facecam/baseline.mjs"
+      ],
+      "entree": "un EDL et son rendu de référence",
+      "sortie": "un tableau avant-après par axe mesure",
+      "bin": [],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "beta",
+      "public": true
+    },
+    {
+      "id": "bande-de-montage",
+      "chaine": "B",
+      "vedette": true,
+      "titre": "Ouvrir la bande de montage et poser des coupes à la main",
+      "resume": "Un serveur local : on joue le rendu, on voit la tête de lecture sur la bande, on sélectionne une portion et on coupe au clic droit. Sauvegarder écrit les coupes dans le plan ; les gestes non sauves survivent au rechargement.",
+      "declencheurs": [
+        "ouvre la bande de montage",
+        "je veux éditer visuellement",
+        "montre-moi la timeline",
+        "je veux couper moi-même"
+      ],
+      "cmd": "node visionneuse.mjs --open",
+      "scripts": [
+        "visionneuse.mjs",
+        "store.mjs"
+      ],
+      "entree": "les rendus de test du store",
+      "sortie": "des coupes écrites dans le plan de coupe",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "pellicule",
+      "chaine": "B",
+      "titre": "Voir l'intérieur d'un plan, image par image",
+      "resume": "Une image par seconde, le temps gravé sur chaque cellule : de quoi décider où couper (un mouvement déjà vu, un va-et-vient) au lieu de juger sur une vignette unique.",
+      "declencheurs": [
+        "montre-moi ce plan",
+        "où couper dans ce rush",
+        "une pellicule"
+      ],
+      "cmd": "node filmstrip.mjs [pas_en_secondes]",
+      "scripts": [
+        "filmstrip.mjs"
+      ],
+      "entree": "les rushs du jour cible",
+      "sortie": "une planche par rush, temps gravé",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "image-de-preuve",
+      "chaine": "B",
+      "titre": "Extraire une image précise sans décoder tout le film",
+      "resume": "Viser une frame par son index décode depuis le debut : deux minutes sur un master 4K. Ici deux secondes — et une preuve qui coûte deux secondes se prend vraiment.",
+      "declencheurs": [
+        "montre-moi l'image à tel instant",
+        "une capture du master",
+        "prouve-le en image"
+      ],
+      "cmd": "node frame.mjs <video.mp4> --index <N>",
+      "scripts": [
+        "frame.mjs"
+      ],
+      "entree": "une vidéo + un index ou un timecode",
+      "sortie": "une image .png",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "mesure-par-plan",
+      "chaine": "B",
+      "titre": "Mesurer la couleur et la lumière plan par plan",
+      "resume": "Chaleur globale, chaleur et saturation de la zone brillante, indice de dorure, luminance moyenne et basse, et le look actif. Une seule extraction partagée, donc léger.",
+      "declencheurs": [
+        "c'est trop chaud",
+        "mesure la couleur",
+        "pourquoi ce plan jure"
+      ],
+      "cmd": "node probe.mjs [R03 R16]",
+      "scripts": [
+        "probe.mjs"
+      ],
+      "entree": "les plans du plan de coupe, ou ceux nommes",
+      "sortie": "un tableau de mesures par plan",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "pack-visuel",
+      "chaine": "B",
+      "titre": "Rassembler en une commande tout ce qu'il faut voir",
+      "resume": "Planches-contact, pellicules, pré-tri et grille de preuve du dernier rendu, plus un manifeste ordonné des images à ouvrir. Conçu pour réduire les allers-retours.",
+      "declencheurs": [
+        "donne-moi tout à voir",
+        "prépare le matériel visuel",
+        "pack"
+      ],
+      "cmd": "node pack.mjs [pas] [--no-strips] [--no-curate] [--no-proof]",
+      "scripts": [
+        "pack.mjs"
+      ],
+      "entree": "le jour cible",
+      "sortie": "un manifeste d'images à ouvrir",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "bornes-brouillon",
+      "chaine": "B",
+      "titre": "Relever les frontières de plans d'un brouillon",
+      "resume": "Quand on dicte ses coupes en lisant le timecode gravé d'un brouillon, il faut savoir ou chaque plan commence dans la timeline — et ça ne se déduit pas du plan de coupe, les segments gagnent ou perdent une image à l'encodage.",
+      "declencheurs": [
+        "où commence ce plan",
+        "je lis le timecode gravé",
+        "converti mes coupes dictées"
+      ],
+      "cmd": "python3 bornes.py <brouillon.mp4>",
+      "scripts": [
+        "bornes.py"
+      ],
+      "entree": "un rendu brouillon avec badges et timecode",
+      "sortie": "la frontière mesurée de chaque plan",
+      "bin": [],
+      "py": [
+        "cv2"
+      ],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "sous-titres",
+      "chaine": "C",
+      "vedette": true,
+      "titre": "Poser des sous-titres karaoké qui ne partent jamais avant la voix",
+      "resume": "Whisper ne date pas le premier mot : il le colle au debut du fichier et étale le texte. La chaîne mesure donc où la voix commence vraiment, recale, contrôle, et le brûlage refuse de graver si le contrôle n'est pas déclaré ou s'il mord.",
+      "declencheurs": [
+        "mets des sous-titres",
+        "sous-titre la vidéo",
+        "le sous-titre est en avance",
+        "karaoké"
+      ],
+      "cmd": "node facecam/overlays/subs.mjs <video.mp4> && node facecam/overlays/subs-recale.mjs",
+      "scripts": [
+        "facecam/overlays/subs.mjs",
+        "facecam/overlays/subs-recale.mjs",
+        "facecam/overlays/subs-controle.mjs",
+        "facecam/overlays/subs-gate.mjs",
+        "facecam/overlays/subs-voix-cas.mjs",
+        "facecam/overlays/vad.py"
+      ],
+      "entree": "un master .mp4",
+      "sortie": "un fichier .ass karaoké recale et contrôle",
+      "_bin": "ffprobe est HÉRITÉ, pas appelé : le banc subs-voix-cas.mjs importe store.mjs pour le chemin du store, et store.mjs peut lancer arbo.mjs (purge), qui lit une définition à l'ffprobe. Le scanner de capacites.mjs mesure au niveau du FICHIER et est conservateur par construction — on déclare le prérequis de trop plutôt que de reconstruire un chemin de store à la main, ce que la doctrine interdit.",
+      "bin": [
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [
+        "numpy"
+      ],
+      "doc": "facecam/README.md",
+      "gate": "subs-controle.mjs — le brûlage refuse de graver sans lui, ou s'il mord. Sa dimension VOIX mesure le SILENCE AVÉRÉ de tête (`vad.py --tete`), jamais un onset : l'onset, daté avec des seuils relatifs au p95 du bloc, annonçait +1,293 s d'avance sur un bloc qui parle depuis sa première image (20/09). Cas connus rejouables dans les quatre sens : `node facecam/overlays/subs-voix-cas.mjs`",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "sous-titres-mixte",
+      "chaine": "C",
+      "titre": "Sous-titrer un film mixte, fenêtre par fenêtre",
+      "resume": "Sur un film qui alterne des blocs parlés et des plans muets, il faut transcrire chaque fenêtre séparément puis la repositionner sur l'horloge du film — un seul appel global mélange tout.",
+      "declencheurs": [
+        "sous-titre mon montage mergé",
+        "des blocs parlés dispersés"
+      ],
+      "cmd": "node facecam/overlays/subs-blocs.mjs <plan.json>",
+      "scripts": [
+        "facecam/overlays/subs-blocs.mjs"
+      ],
+      "entree": "un master mixte + la carte de ses blocs parlés",
+      "sortie": "un .ass unique, chaque bloc à sa place",
+      "bin": [
+        "ffmpeg",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "overlay-espace-libre",
+      "chaine": "C",
+      "titre": "Trouver où poser un visuel sans couvrir la personne",
+      "resume": "mesure la boîte réellement occupée par le sujet en PIRE CAS sur toute la fenêtre : un overlay calé sur le pire cas ne chevauche jamais, et ne saute pas d'un côté à l'autre.",
+      "declencheurs": [
+        "où poser cet élément",
+        "il ne faut pas me cacher",
+        "quelle bande est libre"
+      ],
+      "cmd": "python3 facecam/freespace.py <video.mp4> <t0> <t1> --n <N>",
+      "scripts": [
+        "facecam/freespace.py"
+      ],
+      "entree": "une vidéo + une fenêtre de temps",
+      "sortie": "les bandes libres mesurées, pire cas",
+      "bin": [],
+      "py": [
+        "mediapipe",
+        "numpy"
+      ],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "overlay-itineraire",
+      "chaine": "C",
+      "titre": "Animer un itinéraire ville par ville",
+      "resume": "Carte et tracé pointillé qui avance dans le temps. Rien n'est animé par le navigateur : tout l'état visuel est une fonction du temps, donc la capture image par image est déterministe et rejouable.",
+      "declencheurs": [
+        "une carte de mon trajet",
+        "un itinéraire animé",
+        "montre le parcours"
+      ],
+      "cmd": "node facecam/overlays/route.mjs <spec.json>",
+      "scripts": [
+        "facecam/overlays/route.mjs"
+      ],
+      "entree": "une spec .json (villes, dates, fenêtre)",
+      "sortie": "une composition HTML pilotable image par image",
+      "bin": [
+        "ffmpeg"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "overlay-carte",
+      "chaine": "C",
+      "titre": "Animer une carte : pays, corridors, rayons",
+      "resume": "Les formes géographiques qui ne sont pas un itinéraire : pays mis en couleur, corridors qui se tracent, rayons depuis un point. Un seuil moteur pour les trois.",
+      "declencheurs": [
+        "une carte muette",
+        "colorie ces pays",
+        "des distances depuis un point"
+      ],
+      "cmd": "node facecam/overlays/geomap.mjs <spec.json>",
+      "scripts": [
+        "facecam/overlays/geomap.mjs"
+      ],
+      "entree": "une spec .json",
+      "sortie": "une composition HTML pilotable image par image",
+      "bin": [
+        "ffmpeg"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "overlay-schema",
+      "chaine": "C",
+      "titre": "Animer un schéma non cartographique",
+      "resume": "Barres datées, courbe, frise, phrase mise en avant, logo. La forme suit la donnée : une skyline est un histogramme de hauteurs.",
+      "declencheurs": [
+        "un graphique",
+        "une frise",
+        "mets cette phrase à l'écran",
+        "des barres"
+      ],
+      "cmd": "node facecam/overlays/figure.mjs <spec.json>",
+      "scripts": [
+        "facecam/overlays/figure.mjs"
+      ],
+      "entree": "une spec .json",
+      "sortie": "une composition HTML pilotable image par image",
+      "bin": [
+        "ffmpeg"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "overlay-chiffre",
+      "chaine": "C",
+      "titre": "Poser une vignette de chiffré",
+      "resume": "Un chiffré est une donnée horizontale : icône, valeur, libellé. On ne le force pas dans une colonne — il se pose dans la bande libre la plus large, mesurée pour CE passage.",
+      "declencheurs": [
+        "une vignette pour ce chiffre",
+        "affiche ce nombre",
+        "un chiffre à l'écran"
+      ],
+      "cmd": "node facecam/overlays/chip.mjs <spec.json>",
+      "scripts": [
+        "facecam/overlays/chip.mjs"
+      ],
+      "entree": "une spec .json (icône, valeur, libellé)",
+      "sortie": "une composition HTML pilotable image par image",
+      "bin": [
+        "ffmpeg"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "overlay-generique",
+      "chaine": "C",
+      "titre": "Fabriquer un générique de fin",
+      "resume": "Un plan a part entière, pas un overlay : fond noir, silhouette qui se dessine, tracé progressif, signature, fondu. Livre en mp4 avec piste muette, pour être validé isolément puis greffé.",
+      "declencheurs": [
+        "un générique de fin",
+        "un carton de fin",
+        "à suivre"
+      ],
+      "cmd": "node facecam/overlays/generique-mp4.mjs <spec.json>",
+      "scripts": [
+        "facecam/overlays/generique.mjs",
+        "facecam/overlays/generique-mp4.mjs"
+      ],
+      "entree": "une spec .json",
+      "sortie": "un .mp4 avec piste muette",
+      "bin": [
+        "ffmpeg"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "overlay-capture",
+      "chaine": "C",
+      "titre": "Transformer une composition HTML en images à fond transparent",
+      "resume": "Chrome déjà installe, pilote sans rien télécharger. Pour chaque image on avance l'horloge PUIS on capture : déterministe, aucune dérive entre l'écran et le fichier.",
+      "declencheurs": [
+        "capture cette composition",
+        "transforme le HTML en PNG"
+      ],
+      "cmd": "node facecam/overlays/capture.mjs <composition.html> <sortie/> <fps> <duree>",
+      "scripts": [
+        "facecam/overlays/capture.mjs"
+      ],
+      "entree": "une composition HTML pilotable",
+      "sortie": "une suite de .png à fond transparent",
+      "bin": [],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "overlay-brulage",
+      "chaine": "C",
+      "titre": "Brûler tous les habillages en une seule passe",
+      "resume": "Capture puis gravé N overlays et les sous-titres en UNE passe. refuse de graver si le contrôle des sous-titres n'est pas déclaré dans le plan, ou s'il mord.",
+      "declencheurs": [
+        "habille la vidéo",
+        "grave les overlays",
+        "applique l'habillage"
+      ],
+      "cmd": "node facecam/overlays/burn.mjs <plan.json>",
+      "scripts": [
+        "facecam/overlays/burn.mjs"
+      ],
+      "entree": "un master + un plan d'habillage",
+      "sortie": "le master habille",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "gate": "refuse sans subs-controle.mjs déclaré",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "overlay-suggestion",
+      "chaine": "C",
+      "titre": "Lire le script et proposer l'habillage",
+      "resume": "Analyse ce qui est dit et sort des propositions d'éléments visuels, avec leur instant. Il propose, il ne produit rien : chaque élément se validé avant d'exister.",
+      "declencheurs": [
+        "qu'est-ce qu'on pourrait illustrer",
+        "propose-moi des visuels",
+        "il manque des éléments"
+      ],
+      "cmd": "node facecam/overlays/suggest.mjs <rendu.mp4>",
+      "scripts": [
+        "facecam/overlays/suggest.mjs"
+      ],
+      "entree": "un master rendu",
+      "sortie": "une liste de propositions horodatées",
+      "bin": [
+        "ffmpeg",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "miniature",
+      "chaine": "C",
+      "titre": "Sortir la vignette d'un épisode",
+      "resume": "Une image tirée du master déjà étalonné — pas du rush brut — avec le titre gravé dans la typo du film. Placement et contraste sont mesures, pas jugés à l'œil ; l'outil dit lui-même quand il faut un voile.",
+      "declencheurs": [
+        "une miniature",
+        "la cover de la vidéo",
+        "une image avec le titre"
+      ],
+      "cmd": "node miniature.mjs \"<master.mp4>\" --t <sec> --titre \"<titre>\"",
+      "scripts": [
+        "miniature.mjs"
+      ],
+      "entree": "un master + un instant + un titre",
+      "sortie": "une image 4K + une version réduite pour l'upload",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [
+        "cv2"
+      ],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "mot-litigieux",
+      "chaine": "C",
+      "titre": "Trancher une graphie litigieuse sur le signal — ou refuser",
+      "resume": "Quand deux graphies sont possibles sur la même plage, on AMORCE le décodeur avec chacune et on regarde laquelle il rend malgré l'amorce contraire. Exige un témoin dont la réponse est connue : si l'instrument suit son amorce là où la vérité est connue, il se récuse au lieu de parler. INDÉCIDABLE est une réponse, et elle renvoie l'extrait au monteur.",
+      "declencheurs": [
+        "il a dit quoi exactement",
+        "ce mot est faux dans les sous-titres",
+        "tranche entre ces deux graphies",
+        "écoute ce passage"
+      ],
+      "cmd": "node facecam/overlays/mot-litigieux.mjs <bloc.wav> --candidats \"a|b\" --temoin <t.wav> --temoin-vrai \"…\" --temoin-leurre \"…\"",
+      "scripts": [
+        "facecam/overlays/mot-litigieux.mjs"
+      ],
+      "entree": "un .wav de bloc, deux graphies candidates, et un témoin du même locuteur dont la réponse est connue",
+      "sortie": "tranché (0) · INDÉCIDABLE + l'extrait à écouter (2) · instrument récusé (1)",
+      "bin": [
+        "ffmpeg",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "coller-generique",
+      "chaine": "C",
+      "titre": "Coller le générique de fin sur un master déjà prouvé",
+      "resume": "Voie de RATTRAPAGE quand le master est déjà rendu et prouvé : concat en copie de flux, sans ré-encoder une image du film, et la piste du dernier cue PROLONGÉE sur le générique pour qu'il ne tombe pas dans le silence. En amont, la bonne voie reste la directive GENERIQUE + OUTRO dans l'EDL de vlog.mjs.",
+      "declencheurs": [
+        "colle le générique au film",
+        "je vois pas le générique",
+        "mets le carton de fin dans la vidéo"
+      ],
+      "cmd": "node facecam/overlays/coller-generique.mjs <master.mp4> <generique.mp4> --out <f.mp4> --musique <p.mp3> --raccord-a <s> --piste-au-raccord <s>",
+      "scripts": [
+        "facecam/overlays/coller-generique.mjs"
+      ],
+      "entree": "un master prouvé, un générique aux mêmes flux, et la piste du dernier cue",
+      "sortie": "le film + son générique, prouvé (durée, origine, fondu, décodage intégral)",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "facecam/README.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "catalogue-rushs",
+      "chaine": "D",
+      "titre": "Numéroter et indexer tous les rushs",
+      "resume": "Un référentiel commun : quand la machine dit R07, l'humain voit exactement le même plan. Numérotation chronologique et index visuel.",
+      "declencheurs": [
+        "catalogue mes rushs",
+        "dérushe ma journée",
+        "indexe mes plans"
+      ],
+      "cmd": "node catalogue.mjs \"<dossier>\"",
+      "scripts": [
+        "catalogue.mjs"
+      ],
+      "entree": "un dossier de rushs",
+      "sortie": "R01..RNN + planches-contact numérotées",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "curation",
+      "chaine": "D",
+      "titre": "Pré-trier les plans par la mesure",
+      "resume": "Exécute la partie mesurable de la doctrine : profil de mouvement dans le temps, coupe de queue gratuite, reprises quasi identiques. Il ne décide pas — la redondance de sens reste un jugement à l'œil.",
+      "declencheurs": [
+        "pré-trie mes plans",
+        "lesquels sont bons",
+        "j'ai des doublons"
+      ],
+      "cmd": "node curate.mjs [R03 R16]",
+      "scripts": [
+        "curate.mjs"
+      ],
+      "entree": "le catalogue du jour",
+      "sortie": "un verdict mesure par plan + une plage a garder",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "fiche-lecture",
+      "chaine": "D",
+      "titre": "Écrire ce que montre chaque rush avant de couper",
+      "resume": "Aucune décision de coupe ne se prend sans que le contenu ait été lu et écrit — sinon on retombe dans la mesure aveugle. Un bloc par rush : ce que ça montre, comment ça évolue, la durée et pourquoi.",
+      "declencheurs": [
+        "fais la fiche du jour",
+        "lis mes rushs",
+        "avant de couper"
+      ],
+      "cmd": "node lecture.mjs",
+      "scripts": [
+        "lecture.mjs"
+      ],
+      "entree": "le catalogue du jour",
+      "sortie": "un gabarit de fiche a remplir",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "hautes-lumieres",
+      "chaine": "D",
+      "titre": "Repérer les plans aux hautes lumières trop intenses",
+      "resume": "mesure les pixels cramés dur et ceux qui bavent, puis suggère un traitement par plan. Sur une source 10 bits l'essentiel est récupérable.",
+      "declencheurs": [
+        "c'est cramé",
+        "le ciel est brûlé",
+        "trop lumineux"
+      ],
+      "cmd": "node highlights.mjs",
+      "scripts": [
+        "highlights.mjs"
+      ],
+      "entree": "les rushs du jour",
+      "sortie": "un traitement suggère par plan",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "montage-journee",
+      "chaine": "D",
+      "titre": "Monter une journée de plans",
+      "resume": "Transcrit, coupe les temps morts, sélectionne, assemble, sous-titre et exporte. Le moteur central de la stack, entièrement hors ligne.",
+      "declencheurs": [
+        "monte cette journée",
+        "fais le montage",
+        "assemble mes plans"
+      ],
+      "cmd": "node monte.mjs",
+      "scripts": [
+        "monte.mjs",
+        "filters.mjs",
+        "store.mjs"
+      ],
+      "entree": "le plan de coupe + le look actif",
+      "sortie": "un master de journée",
+      "bin": [
+        "aubiotrack",
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true,
+      "vedette": true
+    },
+    {
+      "id": "look-lut",
+      "chaine": "D",
+      "titre": "Changer le look, la LUT, l'étalonnage",
+      "resume": "Une bibliothèque de filtres colorimétriques et un générateur de LUT filmiques par calcul, sans rien télécharger. Se validé par une grille avant-après sur la même image, jamais par un rendu complet.",
+      "declencheurs": [
+        "change le look",
+        "une autre LUT",
+        "l'image est trop froide",
+        "l'étalonnage"
+      ],
+      "cmd": "node make-luts.mjs",
+      "scripts": [
+        "make-luts.mjs",
+        "filters.mjs"
+      ],
+      "entree": "un nom de look et son dosage",
+      "sortie": "des LUT .cube sélectionnables",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "vlog-merge",
+      "chaine": "D",
+      "titre": "Marier des bandes muettes et des blocs parlés sur une timeline",
+      "resume": "Ni un montage de journée ni un montage de prise : une troisième opération qui ORDONNE des morceaux déjà validés, en gardant chaque sujet parlé entier.",
+      "declencheurs": [
+        "fais la vidéo finale",
+        "entremêle facecam et paysage",
+        "l'épisode complet"
+      ],
+      "cmd": "node vlog.mjs --dry",
+      "scripts": [
+        "vlog.mjs",
+        "nus.mjs"
+      ],
+      "entree": "des masters de journée nus + un master parlé + une trame",
+      "sortie": "un épisode assemble + sa timeline mesurée",
+      "bin": [
+        "aubioonset",
+        "aubiotrack",
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "docs/VLOG.md",
+      "statut": "stable",
+      "public": true,
+      "gate": "vlog.mjs — REFUSE de bâtir l'épisode si le master facecam n'a pas de QUITUS valide de facecam/parole.mjs (empreinte du fichier ; réserve MONTAGE_QUITUS_RESERVE), s'il n'est pas CFR (image découpée par index, son en secondes ; réserve MONTAGE_HORLOGE_TOL), ou si un CARTON de ville tombe APRÈS le premier bloc facecam qui la nomme (règle du monteur du 18/09 ; réserve RESERVE_CARTON <Ville>). Tout se vérifie au --dry."
+    },
+    {
+      "id": "re-rendu",
+      "chaine": "D",
+      "titre": "Re-rendre un épisode sans retoucher le montage",
+      "resume": "Quand l'image change mais pas le montage : re-rend chaque journée depuis son manifeste, donc aucun risque de recouper. Vérifie que tous les segments existent avant d'installer, et restaure les réglages même en cas d'échec.",
+      "declencheurs": [
+        "applique ce grade à toute la vidéo",
+        "re-rends avec la nouvelle recette",
+        "passe en final"
+      ],
+      "cmd": "node revlog.mjs --dry",
+      "scripts": [
+        "revlog.mjs"
+      ],
+      "entree": "les manifestes de l'épisode",
+      "sortie": "l'épisode re-rendu",
+      "bin": [
+        "aubioonset",
+        "aubiotrack",
+        "ffmpeg",
+        "ffprobe",
+        "whisper-cli"
+      ],
+      "py": [],
+      "doc": "docs/VLOG.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "musique",
+      "chaine": "D",
+      "titre": "Poser la musique, choisir où démarrer le morceau",
+      "resume": "Une carte multi-pistes calculée sur la structure du film : ou une piste entre, où elle sort, a quel endroit du morceau elle démarre, et comment elle s'efface sous la voix. Le vivier se restreint depuis l EDL (`MUSIQUE_EXCLURE`) quand une piste porte des voix, et un vivier spécialisé trop maigre pour servir tous les cues sans se répéter redevient le vivier entier.",
+      "declencheurs": [
+        "pose une musique",
+        "le son est mal dosé",
+        "on n'entend pas ma voix",
+        "varie les musiques"
+      ],
+      "cmd": "node musique.mjs plan \"<video.mp4>\"",
+      "scripts": [
+        "musique.mjs"
+      ],
+      "entree": "un montage + un vivier de morceaux",
+      "sortie": "une carte musicale appliquée au film",
+      "bin": [
+        "aubioonset",
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/MUSIQUE.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "critique-montage",
+      "chaine": "D",
+      "titre": "Critiquer un montage rendu, par la mesure",
+      "resume": "Ne juge pas le goût : mesure ce qu'une machine mesure de façon fiable, pour que la critique s'appuie sur des chiffres. Le goût reste à l'œil, sur la planche.",
+      "declencheurs": [
+        "critique ce montage",
+        "pourquoi c'est moyen",
+        "améliore la vidéo"
+      ],
+      "cmd": "node critique.mjs [<rendu.mp4>]",
+      "scripts": [
+        "critique.mjs"
+      ],
+      "entree": "un rendu",
+      "sortie": "une planche + des signaux mesures + un rapport",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/CRITIQUE.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "apprendre-reference",
+      "chaine": "D",
+      "titre": "Apprendre d'une vidéo bien montée",
+      "resume": "L'inverse de la critique : on mesure une vidéo qu'on trouve réussie et on en tiré un profil chiffré — durée des plans, rythme des coupes, dynamique, audio — que le moteur pourra viser.",
+      "declencheurs": [
+        "j'aime bien cette vidéo",
+        "inspire-toi de ça",
+        "analyse cette référence"
+      ],
+      "cmd": "node analyse-reference.mjs \"<video.mp4>\"",
+      "scripts": [
+        "analyse-reference.mjs"
+      ],
+      "entree": "une vidéo de référence",
+      "sortie": "un profil chiffré",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "brief-session",
+      "chaine": "E",
+      "titre": "Savoir où on en est en une commande",
+      "resume": "Jour cible, look actif, qualité, resume du plan de coupe, derniers rendus, taille du catalogue. Lecture seule, instantané.",
+      "declencheurs": [
+        "où on en est",
+        "fais le point",
+        "brief"
+      ],
+      "cmd": "node brief.mjs",
+      "scripts": [
+        "brief.mjs"
+      ],
+      "entree": "l'état du store",
+      "sortie": "un resume d'une page",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true,
+      "vedette": true
+    },
+    {
+      "id": "etat-session",
+      "chaine": "E",
+      "titre": "Tenir le fil de la session",
+      "resume": "Le plan de coupe dit QUOI. Cet état dit POURQUOI et où on en est : journal, décisions, en-attente. Il survit à une remise à zéro du contexte ou à un changement de machine.",
+      "declencheurs": [
+        "note cette décision",
+        "qu'est-ce qui reste à faire",
+        "reprends où on en était"
+      ],
+      "cmd": "node etat.mjs [log|decision|pending|done \"<texte>\"]",
+      "scripts": [
+        "etat.mjs"
+      ],
+      "entree": "des lignes de journal",
+      "sortie": "un état persistant relisable",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "rangement-store",
+      "chaine": "E",
+      "titre": "Ranger le store et appliquer la rétention",
+      "resume": "Pose, répare et vérifie l'arborescence canonique ; applique la rétention en corbeille, donc réversible. La structure est un contrat : elle se pose par l'outil, jamais à la main.",
+      "declencheurs": [
+        "range le dossier",
+        "c'est le bordel",
+        "ça s'accumule",
+        "machine neuve"
+      ],
+      "cmd": "node arbo.mjs",
+      "scripts": [
+        "arbo.mjs",
+        "store.mjs"
+      ],
+      "entree": "le store",
+      "sortie": "un plan de rangement, puis son application",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/ARBO.md",
+      "gate": "node arbo.mjs --check — sortie non nulle si la structure a dérive",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "restitution",
+      "chaine": "E",
+      "titre": "Rendre le tableau de ce qui a été garde et coupe",
+      "resume": "Toute itération rend un tableau propre, une ligne par plan, aucun plan passe sous silence — et l'arithmétique vient de la mesure, pas du calcul mental.",
+      "declencheurs": [
+        "fais la restitution",
+        "qu'est-ce qu'on a gardé",
+        "le bilan du montage"
+      ],
+      "cmd": "node restitution.mjs",
+      "scripts": [
+        "restitution.mjs",
+        "vlog-restitution.mjs"
+      ],
+      "entree": "le plan de coupe + le rendu",
+      "sortie": "un tableau avant-après",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "gate-master",
+      "chaine": "E",
+      "vedette": true,
+      "titre": "La gate de clôture d'un master",
+      "resume": "La preuve complète et rejouable avant de dire que c'est fini : synchronisation du son, intégrité des segments, conformité à la timeline. mesurée, pas affirmée.",
+      "declencheurs": [
+        "prouve que c'est bon",
+        "contrôle final",
+        "c'est vraiment fini ?"
+      ],
+      "cmd": ".venv-vision/bin/python gate.py <master.mp4>",
+      "scripts": [
+        "gate.py"
+      ],
+      "entree": "un master + sa référence audio + sa timeline",
+      "sortie": "un verdict mesure, sortie non nulle si un axe échoue",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [
+        "numpy"
+      ],
+      "doc": "docs/VLOG.md",
+      "statut": "stable",
+      "public": true
+    },
+    {
+      "id": "numeroter-fichiers",
+      "chaine": "E",
+      "titre": "Préfixer le numéro de plan dans le nom des fichiers",
+      "resume": "Pour retrouver R07 à l'œil dans le gestionnaire de fichiers, sans ouvrir le catalogue.",
+      "declencheurs": [
+        "renomme mes rushs",
+        "je ne retrouve pas R07"
+      ],
+      "cmd": "node numeroter.mjs --dry",
+      "scripts": [
+        "numeroter.mjs"
+      ],
+      "entree": "les rushs du jour",
+      "sortie": "des fichiers préfixés",
+      "bin": [
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "py": [],
+      "doc": "docs/INDEX.md",
+      "statut": "stable",
+      "public": true
+    }
+  ],
+  "internes": [
+    "store.mjs",
+    "facecam/lib.mjs",
+    "toc.mjs",
+    "capacites.mjs",
+    "facecam/pose_at.py",
+    "facecam/score_video.py",
+    "facecam/embed.py",
+    "facecam/parole.py",
+    "facecam/facemesh_probe.py",
+    "facecam/freespace.py",
+    "facecam/overlays/vad.py",
+    "facecam/overlays/subs-controle.mjs",
+    "facecam/overlays/subs-gate.mjs",
+    "facecam/overlays/generique.mjs",
+    "motion.py",
+    "overlay/render-title.mjs",
+    "vlog-restitution.mjs",
+    "nus.mjs",
+    "filters.mjs",
+    "profil.mjs"
+  ]
+}

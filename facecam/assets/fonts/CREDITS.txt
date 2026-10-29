@@ -1,0 +1,30 @@
+POLICES EMBARQUÉES — toutes sous SIL Open Font License 1.1
+(licence mesurée dans les métadonnées de chaque fichier, nameID 13/14 — pas supposée)
+Le texte complet de la licence est dans OFL.txt, à côté de ce fichier.
+
+  Anton-Regular.ttf
+    Copyright 2020 The Anton Project Authors (https://github.com/googlefonts/AntonFont.git)
+  ArchivoBlack-Regular.ttf
+    Copyright 2017 The Archivo Black Project Authors (https://github.com/Omnibus-Type/ArchivoBlack)
+  BarlowSemiCondensed-ExtraBold.ttf
+    Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
+  BebasNeue-Regular.ttf
+    Copyright 2019 The Bebas Neue Project Authors (https://github.com/dharmatype/Bebas-Neue)
+  FiraSans-Black.ttf
+    Digitized data copyright 2012-2016, The Mozilla Foundation and Telefonica S.A.
+  Inter-var.ttf
+    Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+  Lato-Black.ttf
+    Copyright (c) 2011-2015 by tyPoland Lukasz Dziedzic (http://www.typoland.com/) with Reserved Font Name "Lato". Licensed under the SIL Open Font License, Version 1.1 (http://scripts.sil.org/OFL).
+  Montserrat-Bold.ttf
+    Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)
+  Montserrat-ExtraBold.ttf
+    Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)
+  Montserrat-SemiBold.ttf
+    Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)
+  Montserrat-var.ttf
+    Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)
+  Oswald-Bold.ttf
+    Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)
+  Poppins-ExtraBold.ttf
+    Copyright 2020 The Poppins Project Authors (https://github.com/itfoundry/Poppins)
